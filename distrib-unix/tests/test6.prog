@@ -1,0 +1,11 @@
+PROGRAM test6;
+VAR X, Y;
+BEGIN
+    READ( X, Y );
+    IF X > Y THEN  BEGIN
+	WRITE( X, Y, 1 );
+    END
+    ELSE  BEGIN
+	WRITE( X, Y, -1 );
+    END;
+END.

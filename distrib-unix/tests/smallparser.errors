@@ -1,0 +1,6 @@
+BEGIN
+   A := 20;
+   B := C * 20;       ! Syntax error at '*'
+   C := 34;
+   D := hello there;  ! Another syntax error, this not found.
+END.

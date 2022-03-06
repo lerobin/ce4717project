@@ -1,0 +1,25 @@
+PROGRAM x;
+VAR accumulator;
+    !-------------------------------------------------------
+    PROCEDURE y;
+    VAR alpha, alpha;			! duplicate alpha
+        !---------------------------------------------------
+        PROCEDURE z;
+        BEGIN
+            IF count <= 3 BEGIN         ! missing THEN
+                accumulator := accumulator + 1;
+                z;
+            END;
+        END;                            ! end of procedure z
+        !---------------------------------------------------
+    BEGIN
+        accumulator := 0;
+        count := 0;
+        z;
+    END;                                ! end of procedure y
+    !-------------------------------------------------------
+BEGIN
+    y;
+    WRITE( y );
+END.
+        

@@ -1,0 +1,43 @@
+
+This directory contains the source files for the stack machine simulator.
+It also contains several assembly language files for the stack machine
+which may be used to test the simulator.
+
+Building the simulator:
+
+Unix/Linux:
+
+To build the simulator, issue the command "make sim" (unix/Linux). This
+builds the simulator executable "sim". The command "make clean" will
+remove the object files generated during the build. The command "make
+veryclean" will remove all the object files and the executable as well.
+
+
+Win32 using the Microsoft Visual C/C++ compiler and associated tools:
+
+First check to see if the supplied "Makefile" matches the file 
+"Makefile.microsoft".  If not, copy "Makefile.microsoft" to "Makefile".
+Then issue the command "nmake sim.exe". The command "nmake clean" will 
+remove the object files generated during the build. The command 
+"nmake veryclean" will remove all the object files and the executable 
+as well.
+
+
+Win32 using the Borland C/C++ 5 compiler:
+
+First copy the file "Makefile.borland" to Makefile. Then issue the 
+command "make sim.exe" to build the simulator executable. "make clean"
+removes all the object files and "make veryclean" removes the executable 
+as well.
+
+
+Testing:
+
+The files with extension ".asm" are the assembly language test files
+for the stack machine simulator. Some of them (test.asm, test2.asm)
+merely check that the simulator program can read assembly language files,
+they do not represent valid programs. The file "test3.asm" is a trivial
+program which subtracts 2 from 3 and prints the result. "Test4.asm"
+is a WHILE-loop, "test5.asm" a branch instruction exerciser. The files
+"test6.asm" and "test7.asm" served to test the behaviour of those
+instructions involved with creating and destroying stack frames.

@@ -1,0 +1,434 @@
+
+
+		sim - A stack machine p-code interpreter
+
+Introduction
+
+sim is a program which interprets and executes machine instructions for the
+stack machine computer which is the target architecture for the compiler. It
+understands all the instructions of the stack machine and can execute them,
+trace through them, display memory and register contents, as well as allowing
+the user to modify the contents of registers and data (stack) memory.
+
+Running sim
+
+To run sim, set default to the directory where the sim executable is found
+(on Unix the executable is simply called sim, on DOS it is sim.exe). 
+Alternatively, set the search path to include the sim executable directory.
+Now type "sim <assembly file>" at the prompt, where "<assembly file>" is the
+name of an assembly language file containing instruction mnemonics, for
+example:
+
+    C:> sim test7.asm
+    sim v1.0.  Type ? for help
+    Completed instruction read
+
+    ==>
+
+This gives you the sim command prompt. Typing "?" will give you a list of
+commands which you may invoke:
+
+    ==> ?
+     ?, HELP          Display this message
+     EXIT             Exit program
+     LOGGING          Toggle logging to file "sim.log"
+     RUN [<c>]        Run <c> instructions, starting from the
+		      current PC
+     TRACE [<c>]      Trace <c> instructions, starting from the
+		      current PC
+     RESET            PC = 0, SP = -1, FP = 0
+		      Initialise stack to zeros
+     DR               Display Registers
+     DDM [<a> [<c>]]  Display data (stack) memory from <a>
+		      displaying <c> words
+     DCM [<a> [<c>]]  Display code (instruction) memory
+		      from <a> displaying <c> words
+     SPC <n>          Set Program Counter to <n>
+     SSP <n>          Set Stack Pointer to <n>
+     SFP <n>          Set Frame Pointer to <n>
+     SDM <a> <v>      Set Data memory at <a> to <v>
+    ==>
+
+Input file format
+
+The <assembly file> should be a file containing valid stack machine mnemonics 
+and absolute addresses. One assembly language instruction is allowed per line.
+No labels are allowed and no symbolic addressing, all addresses and offsets
+must be explicitly included in the program file. So, as you can see, the input
+file format is somewhere between pure machine code and true assembly language.
+
+Each instruction may be prefixed by a number. This can be thought of as either
+a line number or a code address. It does not matter what goes here, as long as
+it is a number, because the reading routine ignores it. If you like you may
+leave it out and just use the instruction alone. It is useful, however, to
+include these numbers as code addresses, so that the targets of jump 
+instructions may easily be seen when reading the code.
+
+Blank lines are allowed in the input, as are comments. In typical assembly
+language style, a comment is everything between a semicolon (;) and the end
+of the line. Comments are simply ignored by the routines which read the file.
+
+The program is always placed in code memory starting at address 0 and building
+up from there. Each instruction occupies exactly one memory word. Here is a
+portion of an example program which is suitable for reading by sim:
+
+    ;
+    ;       test7.asm
+    ;
+    ;       code to test the Ldp and Rdp instructions
+    ;
+    ;       first reserve 4 words of memory, 0, 1, 2, 3, as display registers.
+    ;       some messy code is needed to do this. Because there is no way of
+    ;       directly modifying the frame pointer, it is set up by "faking"
+    ;       a stack frame and using rsf to remove it, "restoring" the desired
+    ;       value into FP. SP is then adjusted to match.
+    ;
+      0 load #0     ; establish fake stack frame containing new value for FP
+      1 load #4     ; i.e., 4
+      2 rsf         ; load FP using a Remove Stack Frame instruction
+      3 inc   5     ; adjust the frame pointer
+      4 load #-1    ; set the display register values to a marker "invalid"
+      5 store 0
+      6 load #-1
+      7 store 1
+      8 load #-1
+      9 store 2
+	  .
+	  .
+
+If an error is detected in the input file, e.g., an illegal mnemonic, an 
+invalid address or addressing mode, etc., the program prints an error message 
+and exits. It is not possible to load a (syntactically) faulty <assembly file>.
+
+The code memory of the machine is filled with "HALT" instructions in every
+available memory address where a program instruction was not loaded from the
+input file. This helps to catch invalid jumps in programs.
+
+Commands
+
+Once the simulator is running and the prompt is displayed, you control the
+execution of the program by issuing commands to the simulator. The commands
+available have already been listed in the output of the "HELP" command, shown
+above. All commands my be abbreviated to the shortest unique string needed to
+identify them, for example, "RESET" may be specified as "RE", "RES", "RESE", or
+"RESET". Case is not significant in commands.
+
+What follows describes each command in somewhat more detail than the "HELP"
+screen of sim.
+
+The HELP Command
+
+This command simply displays the help screen, shown above.
+
+The EXIT Command
+
+The "EXIT" command causes the program to terminate normally. In particular, the
+logging file (see below, under "LOGGING") is properly closed before the 
+program exits. Use this command to stop the program in preference to 
+Control-C or any other emergency termination.
+
+The LOGGING Command
+
+This command toggles the logging mode of the simulator. When logging is
+enabled all simulator output which is shown on the screen is echoed to a disk
+file called "SIM.LOG". Initially, when the simulator is started up, logging
+is disabled. Typing "LOGGING" (or "LO", "LOG", etc.) will cause logging to be
+turned on, so that all output is echoed to the logging file. Thereafter, the
+command will toggle the logging mode.
+
+If logging mode is alternatively enabled and disabled several times during a 
+run of the simulator, all output during the periods when logging is enabled is
+appended to "SIM.LOG".
+
+If an old logging file "SIM.LOG", exists in the current directory when logging
+is enabled for the first time during a simulation run, it is renamed to 
+become "SIM.BAK". Any previously existing "SIM.BAK" file is lost. Subsequently
+enabling logging during the same simulation run causes output to be appended
+to "SIM.LOG".
+
+The RUN Command
+
+This command executes instructions. If issued by itself it will execute 
+100 instructions, unless it encounters a "HALT" instruction which will cause it
+to stop. It may also be issued along with an instruction execution count, 
+i,e,, "RUN 10", which will cause 10 instructions to be executed unless a
+"HALT" is encountered first.
+
+Instruction execution always commences from the value currently in the 
+Program Counter (PC) register. Initially, when the simulator is first started
+up, the PC will contain 0, i.e., the first instruction which will be executed
+will be that at address 0.
+
+When the simulator has executed as many instructions as it is allowed to 
+(constrained either by the instruction count or by the presence of a HALT
+instruction), it will print out an information line, for example:
+
+    ==> ru 1
+    Addr   SP    FP    [SP]  [SP-1] [SP-2] [SP-3]   Instruction
+    ----  ----  ----  ------ ------ ------ ------ ----------------
+      1     0     0      0     --     --     --     Load    #4
+    ==>
+
+This information line tells you:
+
+	Addr	- the address of the next instruction which will be
+		  executed (e.g., if another RUN command is issued.)
+	SP      - the value in the Stack Pointer after the current instruction
+		  has completed executing.
+	FP      - as above, but with the Frame Pointer in mind.
+	[SP]    - the value at the top of the stack after the current 
+		  instruction has finished.
+	[SP-1]  - the value below the top of stack value. 
+	[SP-2]  - the third value on the stack.
+	[SP-3]  - the fourth value on the stack.
+	Instruction - the next instruction which will be executed.
+
+The square brackets may be read as "the contents of", so "[SP]" means
+"The contents of the location pointed to by the value in the Stack Pointer",
+[SP-1] means "form an address by subtracting one from the value in the Stack
+Pointer. [SP-1] is the contents of the memory location pointed to by this
+address".
+
+The stack is of the preincrement/postdecrement type. Its organisation is
+as follows:
+
+		SP -->  |  [SP]    |
+			+----------+
+			|  [SP-1]  |
+			+----------+
+			|  [SP-2]  |
+			+----------+
+			|  [SP-3]  |
+			+----------+
+			|          |
+			     .
+			     .
+			|          |
+			+----------+
+	             0	|          |
+			+----------+
+
+The TRACE Command
+
+This is similar to the RUN command. The difference is that an information line
+is printed out before any instruction is executed and also after every 
+instruction has completed execution. As with the RUN command an instruction
+count may be issued with the command or omitted. If an instruction count is
+issued, this will be the number of instructions traced (max 20), unless a
+"HALT" instruction is encountered first. If no instruction count is issued, 
+exactly 1 instruction will be executed. Example:
+
+    ==> t
+    Addr   SP    FP    [SP]  [SP-1] [SP-2] [SP-3]   Instruction
+    ----  ----  ----  ------ ------ ------ ------ ----------------
+      0    -1     0     --     --     --     --     Load    #0
+      1     0     0      0     --     --     --     Load    #4
+    ==>
+
+Here the information line with address field 0 is the state of the computer
+before the "LOAD #0" is executed, the second line is the state of the
+computer after that instruction has completed execution, but before the
+"LOAD #4" instruction is executed.
+
+As is the case with the RUN command, the TRACE command always starts
+executing instructions at the address in memory given by the value of the
+Program Counter when the TRACE command is issued.
+
+The "---" notation indicates that there is no valid value at a given stack 
+location. So, initially, before any instructions are executed, the stack is
+empty, which is what is shown on the first line of the trace above (the one
+with the "LOAD #0" instruction field. 
+
+Here is a TRACE command which executes 5 instructions:
+
+    ==> t 5
+    Addr   SP    FP    [SP]  [SP-1] [SP-2] [SP-3]   Instruction
+    ----  ----  ----  ------ ------ ------ ------ ----------------
+      1     0     0      0     --     --     --     Load    #4
+      2     1     0      4      0     --     --     Rsf
+      3    -1     4     --     --     --     --     Inc     5
+      4     4     4      0      0      0      4     Load    #-1
+      5     5     4     -1      0      0      0     Store   0
+      6     4     4      0      0      0      4     Load    #-1
+    ==>
+
+The RESET Command
+
+The RESET command resets the computer to its initial state, i.e., that which
+obtains when the simulator has just been started. This is:  PC = 0, SP = -1,
+FP = 0, and all the data (stack) memory cleared to zeros.
+
+The Stack Pointer is initially -1 to indicate an empty stack. As the stack is
+preincrement/postdecrement, an initial Stack Pointer of 0 would indicate that
+the stack contained one value at start up. The first instruction which causes
+a push onto the stack, such as a "LOAD" or "PUSH FP" instruction will cause 
+the Stack Pointer to become non-negative.
+
+The DR Command
+
+The DR command displays the values currently in the Program Counter, Stack
+Pointer and Frame Pointer registers. These are the only registers in the
+stack machine. Example:
+
+    ==> reset
+    ==> dr
+    PC =    0,  SP =   -1,  FP =    0
+    ==>
+
+The DDM Command
+
+The DDM command is designed to display the contents of data memory locations.
+It has two optional parameters. The first is the address in memory of the
+first word to be displayed, the second a count of the number of words to be
+displayed.
+
+Either the count value may be omitted or both the starting address and the
+count may be omitted. It is not possible to omit the starting address and
+include the count value, as the first parameter is always interpreted as a 
+start address.
+
+One unusual feature of the DDM command is that it works backwards in memory.
+If asked to display 5 words, starting at address 100, it will display the
+contents of addresses 100, 99, 98, 97, and 96 in that order. For example:
+
+    ==> ddm 100 5
+     100:    0      0      0      0      0
+    =>
+
+If the user requests that more than 10 words be displayed, they are shown 
+in groups of 10 words per line, always starting with the highest address at the
+left and wording towards the lowest address on the right. For example, to
+display the 15 words from 100 to 86 we could use:
+
+    ==> ddm 100 15
+     100:    0      0      0      0      0      0      0      0      0      0
+      90:    0      0      0      0      0
+    ==>
+
+If the count value is omitted a default of 20 words is assumed. It is possible
+to display up to 100 words at a time. If a count value is given which is too
+large (> 100), 20 words are displayed.
+
+If the address value is omitted the current value of the Stack Pointer is
+used to serve as the address. This gives an easy way to view the top 20 words
+on the stack:
+
+    ==> ddm
+      39:   20     17      4     -1     -1     -1     -1     -1      6      4
+      29:   15      8     42     34      7      9     -5      0      2      3
+    ==>
+
+However, if the stack does not contain 20 words, only the values actually on
+the stack are displayed, i.e.
+
+    ==> ddm
+       5:   20     -1     -1     -1     -1      4
+    ==>
+
+Here the implicit request to display 20 words is not honoured because only
+6 words are on the stack. The address at the start of the line gives the 
+current value of the Stack Pointer.
+
+If the Stack Pointer is -1 when a DDM command without parameters is issued
+the system will simply reply "Stack Empty".
+
+The rule of only displaying values if they correspond to valid memory locations
+applies also to the more general form of the DDM command, where one or both
+parameters are specified.
+
+The DCM Command
+
+The DCM command displays instructions in code memory. It acts as a disassembler
+because it displays the instructions in mnemonic form. The display is 
+similar to the format used by the assembly language file read in when the
+simulator is started, but, in this case the initial number displayed with the
+instruction mnemonic has a real meaning, it is the address within code
+memory of the instruction being displayed.
+
+As with the DDM command, DCM has two optional parameters representing the
+start address for the display and the number of words (instructions) to be
+displayed. As with DDM one may omit the count parameter or both the count and
+the address parameters, but may not specify a count parameter by itself.
+
+If the count parameter is omitted 20 instructions are displayed. The maximum
+number of instructions which may be displayed at one time is 20.
+
+If the address parameter is omitted the Program Counter is used to furnish
+the starting address.
+
+Unlike the DDM command, DCM works forwards in memory, displaying instructions
+at <addr>, <addr+1>, <addr+2>, etc. Here is an example DCM command:
+
+    ==> dcm 10 10
+
+      10  Load    #-1
+      11  Store   3
+      12  Ldp     0
+      13  Inc     1
+      14  Push    FP
+      15  Bsf
+      16  Call    21
+      17  Rsf
+      18  Load    FP+1
+      19  Write
+     
+    ==>
+
+The SPC Command
+
+The SPC command sets the Program Counter to a new value. Here is an example:
+
+    ==> reset
+    ==> dr
+      PC =    0,  SP =   -1,  FP =    0
+    ==> spc 40
+    ==> dr
+      PC =   40,  SP =   -1,  FP =    0
+    ==>
+
+The SSP Command
+
+The SSP command sets the Stack Pointer to a new value. Here is an example:
+
+    ==> dr
+      PC =   40,  SP =   -1,  FP =    0
+    ==> ssp 30
+    ==> dr
+      PC =   40,  SP =   30,  FP =    0
+    ==>
+
+The SFP Command
+
+The SFP command sets the Frame Pointer to a new value. Here is an example:
+
+    ==> dr
+      PC =   40,  SP =   30,  FP =    0
+    ==> sfp 51
+    ==> dr
+      PC =   40,  SP =   30,  FP =   51
+    ==>
+
+The SDM Command
+
+The SDM command sets the data (stack) memory word indexed by the first 
+parameter of the command to the value given in the second parameter. This 
+allows manipulation of the data memory one word at a time. Notice that no
+analogous facility allows access to the code memory. The stack machine is
+so designed that it is impossible for a program to modify its code space
+during execution. Therefore, it was felt that it would be inappropriate 
+to give the user of the simulator this ability.
+
+Both parameters of the SDM command are obligatory. Here is an example SMD
+command:
+
+    ==> ddm 1 1
+       1:    0
+    ==> sdm 1 24
+    ==> ddm 1 1
+       1:   24
+    ==>
+
+The SDM command is purposefully designed to be limited. For example, there is
+no way to load negative numbers into a memory location because the syntax of
+the command line parser does not understand unary minus. Therefore the moral 
+is, don't patch in the simulator, fix your code outside it!
