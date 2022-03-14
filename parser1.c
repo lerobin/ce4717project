@@ -5,7 +5,6 @@
 /*                                                                          */
 /*       Group Members:          ID numbers                                 */
 /*                                                                          */
-/*       Ronan Randles            19242441                                  */
 /*       Laoise Robinson          19253613                                  */
 /*       Niall Hearne             18241026                                  */
 /*       Daniel Puslednik         19261977                                  */
