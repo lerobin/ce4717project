@@ -684,10 +684,10 @@ PRIVATE void Accept( int ExpectedToken )
 {
     if ( CurrentToken.code != ExpectedToken )  {
         SyntaxError( ExpectedToken, CurrentToken );
-        ReadToEndOfFile();
-        fclose( InputFile );
-        fclose( ListFile );
-        exit( EXIT_FAILURE );
+        //ReadToEndOfFile();
+        //fclose( InputFile );
+        //fclose( ListFile );
+        //exit( EXIT_FAILURE );
     }
     else  CurrentToken = GetToken();
 }
