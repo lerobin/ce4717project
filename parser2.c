@@ -11,7 +11,9 @@
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
-/*       parser2 - with syntax error detection and recovery                 */
+/*       parser2 - parser1 with Augmented S-Algol Error Recovery - parser   */
+/*       is able to detect and report errors and then recover and resync    */
+/*       with the input                                                     */
 /*--------------------------------------------------------------------------*/
 
 #include <stdio.h>
@@ -231,10 +233,11 @@ PRIVATE void ParseFormalParameter( void )
 PRIVATE void ParseBlock( void )
 {
     Accept( BEGIN );
-
+    Synchronise(&StatementFS_aug, &StatementFBS);
     while ( CurrentToken.code != END ) {
         ParseStatement();
         Accept(SEMICOLON);
+        Synchronise(&StatementFS_aug, &StatementFBS);
     }
     Accept( END );
 }
@@ -699,6 +702,12 @@ PRIVATE void Accept( int ExpectedToken )
     else  CurrentToken = GetToken();
 }
 
+/*  SetupSets: description here TODO
+*/
+PRIVATE void SetupSets(void)
+{
+
+}
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
