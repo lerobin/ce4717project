@@ -661,12 +661,13 @@ PRIVATE void ParseAlphaNum( void )
 /*           lookahead matches this, advances the lookahead and returns.    */
 /*                                                                          */
 /*           If the expected token fails to match the current lookahead,    */
-/*           this routine reports a syntax error and exits ("crash & burn"  */
-/*           parsing).  Note the use of routine "SyntaxError"               */
-/*           (from "scanner.h") which puts the error message on the         */
-/*           standard output and on the listing file, and the helper        */
-/*           "ReadToEndOfFile" which just ensures that the listing file is  */
-/*           completely generated.                                          */
+/*           this routine reports a syntax error. It then checks if the     */
+/*           parser is in a recovering state. If yes then the code checks   */
+/*           if the current token is neither the expected token or the end  */
+/*           of the input. if it is neither then the current token calls    */
+/*           the get token function and resets the recovering flag to 0.    */
+/*           This is all for the purpose of resyncing the parser with the   */
+/*           input.                                                         */
 /*                                                                          */
 /*                                                                          */
 /*    Inputs:       Integer code of expected token                          */
@@ -682,12 +683,18 @@ PRIVATE void ParseAlphaNum( void )
 
 PRIVATE void Accept( int ExpectedToken )
 {
+    static int recovering = 0;
+
+    if(recovering){
+      while(CurrentToken.code != ExpectedToken &&
+            CurrentToken.code != ENDOFINPUT)
+          CurrentToken = GetToken();
+      recovering = 0;
+    }
+
     if ( CurrentToken.code != ExpectedToken )  {
         SyntaxError( ExpectedToken, CurrentToken );
-        //ReadToEndOfFile();
-        //fclose( InputFile );
-        //fclose( ListFile );
-        //exit( EXIT_FAILURE );
+        recovering = 1;
     }
     else  CurrentToken = GetToken();
 }
