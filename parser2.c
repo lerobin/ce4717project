@@ -46,7 +46,8 @@ PRIVATE TOKEN  CurrentToken;       /*  Parser lookahead token.  Updated by  */
 
 PRIVATE int  OpenFiles( int argc, char *argv[] );
 PRIVATE void Accept( int code );
-PRIVATE void ReadToEndOfFile( void );
+PRIVATE void Synchronise(SET *F, SET *FB);
+PRIVATE void SetupSets(void);
 
 PRIVATE void ParseProgram(void);
 PRIVATE void ParseDeclarations(void);
@@ -76,6 +77,8 @@ PRIVATE void ParseVariable(void);
 PRIVATE void ParseIntConst(void);
 PRIVATE void ParseIdentifier(void);
 
+PRIVATE SET SetBlockFBS;
+PRIVATE SET SetBlockFS_aug;
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
@@ -233,11 +236,11 @@ PRIVATE void ParseFormalParameter( void )
 PRIVATE void ParseBlock( void )
 {
     Accept( BEGIN );
-    Synchronise(&StatementFS_aug, &StatementFBS);
+    Synchronise(&SetBlockFS_aug, &SetBlockFBS);
     while ( CurrentToken.code != END ) {
         ParseStatement();
         Accept(SEMICOLON);
-        Synchronise(&StatementFS_aug, &StatementFBS);
+        Synchronise(&SetBlockFS_aug, &SetBlockFBS);
     }
     Accept( END );
 }
@@ -706,7 +709,25 @@ PRIVATE void Accept( int ExpectedToken )
 */
 PRIVATE void SetupSets(void)
 {
+    /* Set for ParseBlock */
+    InitSet(&SetBlockFS_aug, 6, IDENTIFIER, WHILE, IF, READ, WRITE,
+            END);
+    InitSet(&SetBlockFBS, 4, SEMICOLON, ELSE, ENDOFPROGRAM, ENDOFINPUT);
 
+}
+
+/* Synchronise: description here TODO
+*/
+PRIVATE void Synchronise(SET *F, SET *FB)
+{
+    SET S;
+
+    S = Union(2, F, FB);
+    if(!InSet(F, CurrentToken.code)) {
+      SyntaxError2(*F, CurrentToken);
+      while(!InSet(&S, CurrentToken.code) )
+          CurrentToken = GetToken();
+    }
 }
 
 /*--------------------------------------------------------------------------*/
@@ -753,37 +774,4 @@ PRIVATE int  OpenFiles( int argc, char *argv[] )
     }
 
     return 1;
-}
-
-
-/*--------------------------------------------------------------------------*/
-/*                                                                          */
-/*  ReadToEndOfFile:  Reads all remaining tokens from the input file.       */
-/*              associated input and listing files.                         */
-/*                                                                          */
-/*    This is used to ensure that the listing file refects the entire       */
-/*    input, even after a syntax error (because of crash & burn parsing,    */
-/*    if a routine like this is not used, the listing file will not be      */
-/*    complete.  Note that this routine also reports in the listing file    */
-/*    exactly where the parsing stopped.  Note that this routine is         */
-/*    superfluous in a parser that performs error-recovery.                 */
-/*                                                                          */
-/*                                                                          */
-/*    Inputs:       None                                                    */
-/*                                                                          */
-/*    Outputs:      None                                                    */
-/*                                                                          */
-/*    Returns:      Nothing                                                 */
-/*                                                                          */
-/*    Side Effects: Reads all remaining tokens from the input.  There won't */
-/*                  be any more available input after this routine returns. */
-/*    TODO = remove once parser 2 is finished                               */
-/*--------------------------------------------------------------------------*/
-
-PRIVATE void ReadToEndOfFile( void )
-{
-    if ( CurrentToken.code != ENDOFINPUT )  {
-        Error( "Parsing ends here in this program\n", CurrentToken.pos );
-        while ( CurrentToken.code != ENDOFINPUT )  CurrentToken = GetToken();
-    }
 }
