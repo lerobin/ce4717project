@@ -133,13 +133,15 @@ PRIVATE void ParseProgram( void )
     Accept( IDENTIFIER );
     Accept( SEMICOLON );
 
+    Synchronise(&SetProgramFS_aug1, &SetProgramFBS);
     if (CurrentToken.code == VAR) {
         ParseDeclarations();
     }
-
+    Synchronise(&SetProgramFS_aug2, &SetProgramFBS);
     while (CurrentToken.code == PROCEDURE)
     {
         ParseProcDeclaration();
+        Synchronise(&SetProgramFS_aug2, &SetProgramFBS);
     }
 
     ParseBlock();
@@ -185,11 +187,14 @@ PRIVATE void ParseProcDeclaration( void )
         ParseParameterList();
     }
     Accept( SEMICOLON );
+    Synchronise(&SetDeclarFS_aug1, &SetDeclarFBS);
     if (CurrentToken.code == VAR) {
         ParseDeclarations();
     }
+    Synchronise(&SetDeclarFS_aug2, &SetDeclarFBS);
     while (CurrentToken.code == PROCEDURE ) {
         ParseProcDeclaration();
+        Synchronise(&SetDeclarFS_aug2, &SetDeclarFBS);
     }
     ParseBlock();
     Accept(SEMICOLON);
