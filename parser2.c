@@ -79,6 +79,11 @@ PRIVATE void ParseIdentifier(void);
 
 PRIVATE SET SetBlockFBS;
 PRIVATE SET SetBlockFS_aug;
+PRIVATE SET SetDeclarFBS;
+PRIVATE SET SetDeclarFS_aug;
+PRIVATE SET SetProgramFBS;
+PRIVATE SET SetProgramFS_aug;
+
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
@@ -604,58 +609,6 @@ PRIVATE void ParseRelOp( void )
     }
 }
 
-/*--------------------------------------------------------------------------*/
-/*                                                                          */
-/*  ParseVariable implements:                                               */
-/*                                                                          */
-/*      〈Variable〉 :== 〈Identifier 〉                                     */
-/*                                                                          */
-/*--------------------------------------------------------------------------*/
-
-PRIVATE void ParseVariable( void )
-{
-
-}
-
-/*--------------------------------------------------------------------------*/
-/*                                                                          */
-/*  ParseIdentifier implements:                                             */
-/*                                                                          */
-/*      〈Identifier 〉 :== 〈Alpha〉 { 〈AlphaNum〉 }                        */
-/*                                                                          */
-/*--------------------------------------------------------------------------*/
-
-PRIVATE void ParseIdentifier( void )
-{
-
-}
-
-/*--------------------------------------------------------------------------*/
-/*                                                                          */
-/*  ParseIntConst implements:                                               */
-/*                                                                          */
-/*      〈IntConst〉 :== 〈Digit〉 { 〈Digit〉 }                              */
-/*                                                                          */
-/*--------------------------------------------------------------------------*/
-
-PRIVATE void ParseIntConst( void )
-{
-
-}
-
-/*--------------------------------------------------------------------------*/
-/*                                                                          */
-/*  ParseAlpha implements:                                                  */
-/*                                                                          */
-/*      〈AlphaNum〉 :== 〈Alpha〉 | 〈Digit〉                                */
-/*                                                                          */
-/*--------------------------------------------------------------------------*/
-
-PRIVATE void ParseAlphaNum( void )
-{
-
-}
-
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
@@ -713,6 +666,10 @@ PRIVATE void SetupSets(void)
     InitSet(&SetBlockFS_aug, 6, IDENTIFIER, WHILE, IF, READ, WRITE,
             END);
     InitSet(&SetBlockFBS, 4, SEMICOLON, ELSE, ENDOFPROGRAM, ENDOFINPUT);
+
+    /* Set for ParseProgram */
+    InitSet(&SetProgramFS_aug, 3, SEMICOLON, ENDOFINPUT, ENDOFPROGRAM);
+    InitSet(&SetProgramFBS, );
 
 }
 
