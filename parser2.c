@@ -80,9 +80,11 @@ PRIVATE void ParseIdentifier(void);
 PRIVATE SET SetBlockFBS;
 PRIVATE SET SetBlockFS_aug;
 PRIVATE SET SetDeclarFBS;
-PRIVATE SET SetDeclarFS_aug;
+PRIVATE SET SetDeclarFS_aug1;
+PRIVATE SET SetDeclarFS_aug2;
 PRIVATE SET SetProgramFBS;
-PRIVATE SET SetProgramFS_aug;
+PRIVATE SET SetProgramFS_aug1;
+PRIVATE SET SetProgramFS_aug2;
 
 
 /*--------------------------------------------------------------------------*/
@@ -663,13 +665,18 @@ PRIVATE void Accept( int ExpectedToken )
 PRIVATE void SetupSets(void)
 {
     /* Set for ParseBlock */
-    InitSet(&SetBlockFS_aug, 6, IDENTIFIER, WHILE, IF, READ, WRITE,
-            END);
+    InitSet(&SetBlockFS_aug, 6, IDENTIFIER, WHILE, IF, READ, WRITE, END);
     InitSet(&SetBlockFBS, 4, SEMICOLON, ELSE, ENDOFPROGRAM, ENDOFINPUT);
 
     /* Set for ParseProgram */
-    InitSet(&SetProgramFS_aug, 3, SEMICOLON, ENDOFINPUT, ENDOFPROGRAM);
-    InitSet(&SetProgramFBS, );
+    InitSet(&SetProgramFS_aug1, 3, PROCEDURE, VAR, BEGIN);
+    InitSet(&SetProgramFS_aug2, 2, PROCEDURE, BEGIN);
+    InitSet(&SetProgramFBS, 3, ENDOFINPUT, ENDOFPROGRAM, END);
+
+    /* Set for ParseProcDeclaration */
+    InitSet(&SetDeclarFS_aug1, 3, VAR, PROCEDURE, BEGIN);
+    InitSet(&SetDeclarFS_aug2, 2, PROCEDURE, BEGIN);
+    InitSet(&SetDeclarFBS, 3, ENDOFINPUT, ENDOFPROGRAM, END);
 
 }
 
