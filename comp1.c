@@ -32,6 +32,8 @@
 PRIVATE FILE *InputFile; /*  CPL source comes from here.          */
 PRIVATE FILE *ListFile;  /*  For nicely-formatted syntax errors.  */
 
+PRIVATE int ERROR_FLAG; /* if any syntax errors are detected set to 1*/
+
 PRIVATE TOKEN CurrentToken; /*  Parser lookahead token.  Updated by  */
                             /*  routine Accept (below).  Must be     */
                             /*  initialised before parser starts.    */
@@ -92,6 +94,7 @@ PRIVATE SET SetProgramFS_aug2;
 
 PUBLIC int main(int argc, char *argv[])
 {
+    ERROR_FLAG = 0;
     printf("parsing\n");
     if (OpenFiles(argc, argv))
     {
@@ -101,15 +104,30 @@ PUBLIC int main(int argc, char *argv[])
         ParseProgram();
         fclose(InputFile);
         fclose(ListFile);
+        if (ERROR_FLAG)
+        {
+            printf("Syntax Error\n"); /*code file has syntax error*/
+            return EXIT_FAILURE;
+        }
         printf("Valid\n");
         return EXIT_SUCCESS;
     }
     else
     {
-        printf("Invalid\n");
+        printf("Syntax Error\n"); /*command line arguments are wrong*/
         return EXIT_FAILURE;
     }
 }
+/*
+printf("Valid\n");
+return EXIT_SUCCESS;
+}
+else
+{
+printf("Invalid\n");
+return EXIT_FAILURE;
+}
+}*/
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
@@ -291,6 +309,7 @@ PRIVATE void ParseStatement(void)
         ParseWriteStatement();
         break;
     default:
+        SyntaxError(IDENTIFIER, CurrentToken);
         break;
     }
 }
@@ -544,6 +563,7 @@ PRIVATE void ParseSubTerm(void)
         ParseExpression();
         Accept(RIGHTPARENTHESIS);
     default:
+        SyntaxError(IDENTIFIER, CurrentToken);
         break;
     }
 }
@@ -623,10 +643,45 @@ PRIVATE void ParseRelOp(void)
         Accept(GREATER);
         break;
     default:
+        SyntaxError(IDENTIFIER, CurrentToken);
         break;
     }
 }
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  ParseVariable implements:                                               */
+/*                                                                          */
+/*       <Variable> :== <Identifier>                                        */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+PRIVATE void ParseVariable(void)
+{
+    ParseIdentifier();
+}
 
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  ParseIntConst implements:                                               */
+/*                                                                          */
+/*       <Variable> :== <Digit> { <Digit> }                                 */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+PRIVATE void ParseIntConst(void)
+{
+    Accept(INTCONST);
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  ParseIdentifier implements:                                             */
+/*                                                                          */
+/*       <Identifier> :== <Alpha> { <AlphaNum> }                            */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+PRIVATE void ParseIdentifier(void)
+{
+    Accept(IDENTIFIER);
+}
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
 /*  End of parser.  Support routines follow.                                */
