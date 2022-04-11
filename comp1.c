@@ -974,55 +974,94 @@ PRIVATE void ParseProgram(void)
 
                 return 1;
             }
-            PRIVATE void MakeSymbolTableEntry(int symtype)
-            {
-                /*〈Variable Declarations here〉*/
-                SYMBOL *newsptr; /*new symbol pointer*/
-                SYMBOL *oldsptr; /*old symbol pointer*/
-                char *cptr;      /*current pointer*/
-                int hashindex;
-                static int varaddress = 0;
+        }
+        /*--------------------------------------------------------------------------*/
+        /* MakeSymbolTableEntry( int symtype ) puts entries in the  */
+        /* Symbol Table, which is organized as a Chaining Hash Table. Takes an argu */
+        /* ment symbol type(symtype) defined in the "symbol.h" header file.         */
+        /* Uses pointers to symbol location to navigate through the symbol table    */
+        /* entries. In general maps the identifier with the information record.     */
+        /*--------------------------------------------------------------------------*/
 
-                if (CurrentToken.code == IDENTIFIER)
-                { /* check to see if there is an entry in the symbol table with the same name as IDENTIFIER */
-                    if (NULL == (oldsptr = Probe(CurrentToken.s, &hashindex)) || oldsptr->scope < scope)
+        PRIVATE void MakeSymbolTableEntry(int symtype)
+        {
+            /*〈Variable Declarations here〉*/
+            SYMBOL *newsptr; /*new symbol pointer*/
+            SYMBOL *oldsptr; /*old symbol pointer*/
+            char *cptr;      /*current pointer*/
+            int hashindex;
+            static int varaddress = 0;
+
+            if (CurrentToken.code == IDENTIFIER)
+            { /* check to see if there is an entry in the symbol table with the same name as IDENTIFIER */
+                if (NULL == (oldsptr = Probe(CurrentToken.s, &hashindex)) || oldsptr->scope < scope)
+                {
+                    if (oldsptr == NULL)
+                        cptr = CurrentToken.s;
+                    else
+                        cptr = oldsptr->s;
+
+                    if (NULL == (newsptr = EnterSymbol(cptr, hashindex)))
                     {
-                        if (oldsptr == NULL)
-                            cptr = CurrentToken.s;
-                        else
-                            cptr = oldsptr->s;
-
-                        if (NULL == (newsptr = EnterSymbol(cptr, hashindex)))
-                        {
-                            /*〈Fatal internal error in EnterSymbol, compiler must exit: code for this goes here〉*/
-                            printf("Fatal internal error in EnterSymbol..!!\n");
-                            exit(EXIT_FAILURE);
-                        }
-                        else
-                        {
-                            if (oldsptr == NULL)
-                            {
-                                PreserveString();
-                            }
-                            newsptr->scope = scope;
-                            newsptr->type = symtype;
-                            if (symtype == STYPE_VARIABLE)
-                            {
-                                newsptr->address = varaddress;
-                                varaddress++;
-                            }
-                            else
-                                newsptr->address = -1;
-                        }
+                        /*〈Fatal internal error in EnterSymbol, compiler must exit: code for this goes here〉*/
+                        printf("Fatal internal error in EnterSymbol..!!\n");
+                        exit(EXIT_FAILURE);
                     }
                     else
-                    { /*〈Error, variable already declared: code for this goes here〉*/
-                        printf("Error, variable already declared...!!\n");
-                        KillCodeGeneration();
+                    {
+                        if (oldsptr == NULL)
+                        {
+                            PreserveString();
+                        }
+                        newsptr->scope = scope;
+                        newsptr->type = symtype;
+                        if (symtype == STYPE_VARIABLE)
+                        {
+                            newsptr->address = varaddress;
+                            varaddress++;
+                        }
+                        else
+                            newsptr->address = -1;
                     }
                 }
                 else
-                {
-                    printf("current token not identifier");
+                { /*〈Error, variable already declared: code for this goes here〉*/
+                    printf("Error, variable already declared...!!\n");
+                    KillCodeGeneration();
                 }
             }
+            else
+            {
+                printf("current token not identifier");
+            }
+        }
+        /*--------------------------------------------------------------------------*/
+        /*  LookupSymbol:    used to check if symbol has been declared              */
+        /*                                                                          */
+        /*                                                                          */
+        /*    Inputs:       none                                                    */
+        /*                                                                          */
+        /*    Outputs:      None                                                    */
+        /*                                                                          */
+        /*    Returns:      Symbol if it exists in symbol table                     */
+        /*                                                                          */
+        /*--------------------------------------------------------------------------*/
+        PRIVATE SYMBOL *LookupSymbol(void)
+        {
+
+            SYMBOL *sptr;
+
+            if (CurrentToken.code == IDENTIFIER)
+            {
+                sptr = Probe(CurrentToken.s, NULL);
+
+                if (sptr == NULL)
+                {
+                    Error("Identifier not declared..", CurrentToken.pos);
+                    KillCodeGeneration();
+                }
+            }
+            else
+                sptr = NULL;
+            return sptr;
+        }
