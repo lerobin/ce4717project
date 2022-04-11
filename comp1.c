@@ -877,7 +877,9 @@ PRIVATE void ParseProgram(void)
                 if (CurrentToken.code != ExpectedToken)
                 {
                     SyntaxError(ExpectedToken, CurrentToken);
+                    KillCodeGeneration();
                     recovering = 1;
+                    ERROR_FLAG = 1; /* for use in main to avoid printing valid*/
                 }
                 else
                     CurrentToken = GetToken();
@@ -944,7 +946,7 @@ PRIVATE void ParseProgram(void)
             PRIVATE int OpenFiles(int argc, char *argv[])
             {
 
-                if (argc != 3)
+                if (argc != 4) /*Updated to 4 due to codefile needed in comp1 */
                 {
                     fprintf(stderr, "%s <inputfile> <listfile>\n", argv[0]);
                     return 0;
@@ -960,6 +962,13 @@ PRIVATE void ParseProgram(void)
                 {
                     fprintf(stderr, "cannot open \"%s\" for output\n", argv[2]);
                     fclose(InputFile);
+                    return 0;
+                }
+                if (NULL == (CodeFile = fopen(argv[3], "w")))
+                {
+                    fprintf(stderr, "cannot open \"%s\" for output\n", argv[3]);
+                    fclose(InputFile);
+                    fclose(ListFile);
                     return 0;
                 }
 
