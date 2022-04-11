@@ -1,0 +1,9 @@
+PROGRAM test6;
+VAR x;
+BEGIN
+    x := 10;
+    WHILE x > 0 DO IF X 3 THEN BEGIN
+	WRITE( x );
+	x := x - 1;
+    END;
+END.

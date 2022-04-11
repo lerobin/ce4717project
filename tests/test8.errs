@@ -1,0 +1,14 @@
+PROGRAM test8;
+VAR  x, y
+PROCEDURE z( REF a );
+BEGIN;
+    a := x = 1;
+END
+
+BEGIN
+    x := 20;
+    WHILE x > 0 BEGIN DO
+        WRITE( x );
+        X := X - 1;
+    END;
+END.

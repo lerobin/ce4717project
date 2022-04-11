@@ -1,0 +1,9 @@
+PROGRAM test7;
+VAR  x, y;
+BEGIN
+    x := 20;
+    WHILE x > 0 BEGIN BEGIN
+        WRITE( x );
+        X := X - 1;
+    END;
+END.
