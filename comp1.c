@@ -974,3 +974,55 @@ PRIVATE void ParseProgram(void)
 
                 return 1;
             }
+            PRIVATE void MakeSymbolTableEntry(int symtype)
+            {
+                /*〈Variable Declarations here〉*/
+                SYMBOL *newsptr; /*new symbol pointer*/
+                SYMBOL *oldsptr; /*old symbol pointer*/
+                char *cptr;      /*current pointer*/
+                int hashindex;
+                static int varaddress = 0;
+
+                if (CurrentToken.code == IDENTIFIER)
+                { /* check to see if there is an entry in the symbol table with the same name as IDENTIFIER */
+                    if (NULL == (oldsptr = Probe(CurrentToken.s, &hashindex)) || oldsptr->scope < scope)
+                    {
+                        if (oldsptr == NULL)
+                            cptr = CurrentToken.s;
+                        else
+                            cptr = oldsptr->s;
+
+                        if (NULL == (newsptr = EnterSymbol(cptr, hashindex)))
+                        {
+                            /*〈Fatal internal error in EnterSymbol, compiler must exit: code for this goes here〉*/
+                            printf("Fatal internal error in EnterSymbol..!!\n");
+                            exit(EXIT_FAILURE);
+                        }
+                        else
+                        {
+                            if (oldsptr == NULL)
+                            {
+                                PreserveString();
+                            }
+                            newsptr->scope = scope;
+                            newsptr->type = symtype;
+                            if (symtype == STYPE_VARIABLE)
+                            {
+                                newsptr->address = varaddress;
+                                varaddress++;
+                            }
+                            else
+                                newsptr->address = -1;
+                        }
+                    }
+                    else
+                    { /*〈Error, variable already declared: code for this goes here〉*/
+                        printf("Error, variable already declared...!!\n");
+                        KillCodeGeneration();
+                    }
+                }
+                else
+                {
+                    printf("current token not identifier");
+                }
+            }
