@@ -11,15 +11,15 @@
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
-/*       parser2 - parser1 with Augmented S-Algol Error Recovery - parser   */
-/*       is able to detect and report errors and then recover and resync    */
-/*       with the input                                                     */
+/*       comp1 - this compiler performs syntax and semantic error detection */
+/*       and code generation for the CPL language, excluding procedure      */
+/*       definitions.                                                       */
 /*--------------------------------------------------------------------------*/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "headers/global.h" /* "header/ can be removed later" */
+#include "headers/global.h" /* "header can be removed later" */
 #include "headers/scanner.h"
 #include "headers/line.h"
 #include "headers/symbol.h"
@@ -956,11 +956,16 @@ PRIVATE int  OpenFiles( int argc, char *argv[] )
 }
 
 /*--------------------------------------------------------------------------*/
-/* MakeSymbolTableEntry( int symtype ) puts entries in the  */
-/* Symbol Table, which is organized as a Chaining Hash Table. Takes an argu */
-/* ment symbol type(symtype) defined in the "symbol.h" header file.         */
+/* MakeSymbolTableEntry( int symtype ) puts entries in the                  */
+/* Symbol Table, which is organized as a Chaining Hash Table. Takes an      */
+/* argument symbol type(symtype) defined in the "symbol.h" header file.     */
 /* Uses pointers to symbol location to navigate through the symbol table    */
 /* entries. In general maps the identifier with the information record.     */
+/*                                                                          */
+/*    Inputs: Int symtype                                                   */
+/*                                                                          */
+/*    Outputs:                                                              */
+
 /*--------------------------------------------------------------------------*/
 
 PRIVATE void MakeSymbolTableEntry(int symtype)
