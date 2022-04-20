@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "headers/global.h" /* "header can be removed later" */
+#include "headers/global.h"
 #include "headers/scanner.h"
 #include "headers/line.h"
 #include "headers/symbol.h"
@@ -113,18 +113,13 @@ PUBLIC int main(int argc, char *argv[])
     if (OpenFiles(argc, argv))
     {
         InitCharProcessor(InputFile, ListFile);
-        CurrentToken = GetToken();
         InitCodeGenerator(CodeFile); /*Initialize code generation*/
+        CurrentToken = GetToken();
         SetupSets();
         ParseProgram();
         WriteCodeFile(); /*Write out assembly to file*/
         fclose(InputFile);
         fclose(ListFile);
-        if (ERROR_FLAG)
-        {
-            printf("Syntax Error\n"); /*code file has syntax error*/
-            return EXIT_FAILURE;
-        }
         printf("Valid\n");
         return EXIT_SUCCESS;
     }
@@ -134,6 +129,14 @@ PUBLIC int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 }
+
+/* if (ERROR_FLAG)
+{
+    printf("Syntax Error\n"); code file has syntax error
+    return EXIT_FAILURE;
+} */
+
+
 /*
 printf("Valid\n");
 return EXIT_SUCCESS;
