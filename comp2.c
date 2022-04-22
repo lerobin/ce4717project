@@ -299,21 +299,22 @@ PRIVATE void ParseParameterList(SYMBOL *target)
 
 PRIVATE void ParseFormalParameter(SYMBOL *target, int pcount)
 {
+    int shiftValue;
+
     if (CurrentToken.code == REF)
     {
         Accept(REF);
         MakeSymbolTableEntry(STYPE_REFPAR, &varaddress);
+        shiftValue = (STYPE_REFPAR << (3 * (pcount - 1)));
         ParseVariable();
-        if (pcount == 1)
-          target->ptypes = target->ptypes +1;
-       else
-          target->ptypes = target->ptypes + (1<<(pcount-1));
    }
    else
    {
-        MakeSymbolTableEntry(STYPE_VARIABLE, &varaddress);
+        MakeSymbolTableEntry(STYPE_VALUEPAR, &varaddress);
+        shiftValue = (STYPE_VALUEPAR << (3 * (pcount - 1)));
         ParseVariable();
    }
+   target->ptypes = target->ptypes | shiftValue;
 }
 
 /*--------------------------------------------------------------------------*/
