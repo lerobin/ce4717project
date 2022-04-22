@@ -37,6 +37,7 @@ PRIVATE TOKEN  CurrentToken;       /*  Parser lookahead token.  Updated by  */
                                    /*  routine Accept (below).  Must be     */
                                    /*  initialised before parser starts.    */
 
+PRIVATE int compileError = 0;
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
@@ -103,11 +104,15 @@ PUBLIC int main ( int argc, char *argv[] )
         ParseProgram();
         fclose( InputFile );
         fclose( ListFile );
-        printf("Valid\n");
-        return  EXIT_SUCCESS;
+        if (!compileError)
+        {
+          printf("Valid\n");
+          return EXIT_SUCCESS;
+        } else return EXIT_FAILURE;
     }
-    else {
-        printf( "Invalid\n");
+    else
+    {
+        printf("Command Line arguments incorrect \n");
         return EXIT_FAILURE;
     }
 }
@@ -248,7 +253,9 @@ PRIVATE void ParseBlock( void )
 {
     Accept( BEGIN );
     Synchronise(&SetBlockFS_aug, &SetBlockFBS);
-    while ( CurrentToken.code != END ) {
+    while ( CurrentToken.code == IDENTIFIER || CurrentToken.code == WHILE ||
+            CurrentToken.code == IF || CurrentToken.code == READ ||
+            CurrentToken.code == WRITE ) {
         ParseStatement();
         Accept(SEMICOLON);
         Synchronise(&SetBlockFS_aug, &SetBlockFBS);
@@ -660,12 +667,22 @@ PRIVATE void Accept( int ExpectedToken )
     if ( CurrentToken.code != ExpectedToken )  {
         SyntaxError( ExpectedToken, CurrentToken );
         recovering = 1;
+        compileError = 1;
     }
     else  CurrentToken = GetToken();
 }
 
-/*  SetupSets: description here TODO
-*/
+//*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*                       S-Algol Error Recovery                             */
+/*                                                                          */
+/*  SetupSets() function - Creates the sets used by the parser functions    */
+/*                                                                          */
+/*  Inputs: None                                                            */
+/*                                                                          */
+/*  Outputs: None                                                           */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
 PRIVATE void SetupSets(void)
 {
     /* Set for ParseBlock */
@@ -684,8 +701,16 @@ PRIVATE void SetupSets(void)
 
 }
 
-/* Synchronise: description here TODO
-*/
+/*--------------------------------------------------------------------------*/
+/*  Synchronise:    Resynchronises the parser with the code                 */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       Two SET type variables F and FB                         */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
 PRIVATE void Synchronise(SET *F, SET *FB)
 {
     SET S;

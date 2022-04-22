@@ -25,6 +25,7 @@
 #include "headers/symbol.h"
 #include "headers/code.h"
 #include "headers/strtab.h"
+
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
 /*  Global variables used by this parser.                                   */
@@ -38,7 +39,10 @@ PRIVATE FILE *CodeFile;     /* machine code output file */
 PRIVATE TOKEN CurrentToken; /*  Parser lookahead token.  Updated by  */
                             /*  routine Accept (below).  Must be     */
                             /*  initialised before parser starts.    */
+                            
 PRIVATE int scope = 1;
+PRIVATE int compileError = 0; /* Flags if there is an error */
+
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
 /*  Function prototypes                                                     */
@@ -111,33 +115,18 @@ PUBLIC int main(int argc, char *argv[])
         WriteCodeFile(); /*Write out assembly to file*/
         fclose(InputFile);
         fclose(ListFile);
-        printf("Valid\n");
-        return EXIT_SUCCESS;
+        if (!compileError)
+        {
+          printf("Valid\n");
+          return EXIT_SUCCESS;
+        } else return EXIT_FAILURE;
     }
     else
     {
-        printf("Syntax Error\n"); /*command line arguments are wrong*/
+        printf("Command Line arguments incorrect \n");
         return EXIT_FAILURE;
     }
 }
-
-/* if (ERROR_FLAG)
-{
-    printf("Syntax Error\n"); code file has syntax error
-    return EXIT_FAILURE;
-} */
-
-
-/*
-printf("Valid\n");
-return EXIT_SUCCESS;
-}
-else
-{
-printf("Invalid\n");
-return EXIT_FAILURE;
-}
-}*/
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
@@ -202,7 +191,7 @@ PRIVATE void ParseDeclarations(void)
         }
         Accept(SEMICOLON);
         Emit(I_INC, vcount);
-        DumpSymbols(0);
+        /* DumpSymbols(0); */
 }
 
 /*--------------------------------------------------------------------------*/
@@ -276,7 +265,7 @@ PRIVATE void ParseParameterList(void)
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 
-    PRIVATE void ParseFormalParameter(void)
+PRIVATE void ParseFormalParameter(void)
 {
         if (CurrentToken.code == REF)
         {
@@ -299,7 +288,9 @@ PRIVATE void ParseBlock(void)
 {
         Accept(BEGIN);
         Synchronise(&SetBlockFS_aug, &SetBlockFBS);
-        while (CurrentToken.code != END)
+        while (CurrentToken.code == IDENTIFIER || CurrentToken.code == WHILE ||
+                CurrentToken.code == IF || CurrentToken.code == READ ||
+                CurrentToken.code == WRITE )
         {
             ParseStatement();
             Accept(SEMICOLON);
@@ -364,6 +355,10 @@ PRIVATE void ParseSimpleStatement(void)
 /*                                                                          */
 /*       〈RestOfStatement〉 :== 〈ProcCallList〉 | 〈Assignment〉 | \eps     */
 /*                                                                          */
+/*  Inputs: takes in the SYMBOL type variable target                        */
+/*                                                                          */
+/*  Ouputs: None                                                            */
+/*                                                                          */
 /*--------------------------------------------------------------------------*/
 
 PRIVATE void ParseRestOfStatement(SYMBOL *target)
@@ -383,6 +378,7 @@ PRIVATE void ParseRestOfStatement(SYMBOL *target)
                 {
                     printf("error in parse rest of statement semicolon case");
                     KillCodeGeneration();
+                    compileError = 1;
                 }
             }
             break;
@@ -399,6 +395,7 @@ PRIVATE void ParseRestOfStatement(SYMBOL *target)
                   {
                     printf("error in parse rest of statement default case");
                     KillCodeGeneration();
+                    compileError = 1;
                   }
                 break;
               }
@@ -508,14 +505,20 @@ PRIVATE void ParseIfStatement(void)
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 
-PRIVATE void ParseReadStatement(void)
+PRIVATE void ParseReadStatement( void )
 {
-    _Emit(I_READ);
-    Accept(READ);
-    ParseProcCallList();
+    Accept( READ );
+    Accept( LEFTPARENTHESIS );
+    Accept( IDENTIFIER );
+
+    while (CurrentToken.code == COMMA) {
+        Accept( COMMA );
+        Accept( IDENTIFIER );
+    }
+    Accept( RIGHTPARENTHESIS );
 }
 
-/*-------------------------------------------------------------------------- */
+/*--------------------------------------------------------------------------*/
 /*                                                                           */
 /*  ParseWriteStatment implements:                                           */
 /*                                                                           */
@@ -524,11 +527,17 @@ PRIVATE void ParseReadStatement(void)
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 
-PRIVATE void ParseWriteStatement(void)
+PRIVATE void ParseWriteStatement( void )
 {
-    Accept(WRITE);
-    ParseProcCallList();
-    _Emit(I_WRITE);
+    Accept( WRITE );
+    Accept( LEFTPARENTHESIS );
+    ParseExpression();
+
+    while( CurrentToken.code == COMMA ) {
+        Accept( COMMA );
+        ParseExpression();
+    }
+    Accept( RIGHTPARENTHESIS );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -816,9 +825,9 @@ PRIVATE void Accept(int ExpectedToken)
    if (CurrentToken.code != ExpectedToken)
    {
        SyntaxError(ExpectedToken, CurrentToken);
-       /* KillCodeGeneration(); */
+       KillCodeGeneration();
        recovering = 1;
-       /* ERROR_FLAG = 1; for use in main to avoid printing valid*/
+       compileError = 1;
    }
    else
        CurrentToken = GetToken();
@@ -854,8 +863,16 @@ PRIVATE void SetupSets(void)
 
 }
 
-/* Synchronise: description here TODO
-*/
+/*--------------------------------------------------------------------------*/
+/*  Synchronise:    Resynchronises the parser with the code                 */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       Two SET type variables F and FB                         */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
 PRIVATE void Synchronise(SET *F, SET *FB)
 {
     SET S;
@@ -866,60 +883,6 @@ PRIVATE void Synchronise(SET *F, SET *FB)
       while(!InSet(&S, CurrentToken.code) )
           CurrentToken = GetToken();
     }
-}
-
-/*--------------------------------------------------------------------------*/
-/*                                                                          */
-/*  OpenFiles:  Reads strings from the command-line and opens the           */
-/*              associated input and listing files.                         */
-/*                                                                          */
-/*    Note that this routine mmodifies the globals "InputFile" and          */
-/*    "ListingFile".  It returns 1 ("true" in C-speak) if the input and     */
-/*    listing files are successfully opened, 0 if not, allowing the caller  */
-/*    to make a graceful exit if the opening process failed.                */
-/*                                                                          */
-/*                                                                          */
-/*    Inputs:       1) Integer argument count (standard C "argc").          */
-/*                  2) Array of pointers to C-strings containing arguments  */
-/*                  (standard C "argv").                                    */
-/*                                                                          */
-/*    Outputs:      No direct outputs, but note side effects.               */
-/*                                                                          */
-/*    Returns:      Boolean success flag (i.e., an "int":  1 or 0)          */
-/*                                                                          */
-/*    Side Effects: If successful, modifies globals "InputFile" and         */
-/*                  "ListingFile".                                          */
-/*                                                                          */
-/*--------------------------------------------------------------------------*/
-
-PRIVATE int  OpenFiles( int argc, char *argv[] )
-{
-
-
-    if ( argc != 4 )  {
-        fprintf( stderr, "%s <inputfile> <listfile>\n", argv[0] );
-        return 0;
-    }
-
-    if ( NULL == ( InputFile = fopen( argv[1], "r" ) ) )  {
-        fprintf( stderr, "cannot open \"%s\" for input\n", argv[1] );
-        return 0;
-    }
-
-    if ( NULL == ( ListFile = fopen( argv[2], "w" ) ) )  {
-        fprintf( stderr, "cannot open \"%s\" for output\n", argv[2] );
-        fclose( InputFile );
-        return 0;
-    }
-
-    if ( NULL == ( CodeFile = fopen( argv[3], "w" ) ) )  {
-        fprintf( stderr, "cannot open \"%s\" for output\n", argv[3] );
-        fclose( InputFile );
-        fclose( ListFile );
-        return 0;
-    }
-
-    return 1;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -980,6 +943,8 @@ PRIVATE void MakeSymbolTableEntry(int symtype)
         else
         { /*〈Error, variable already declared: code for this goes here〉*/
             printf("Error, variable already declared...!!\n");
+            KillCodeGeneration();
+            compileError = 1;
         }
        }
 
@@ -1010,8 +975,63 @@ PRIVATE SYMBOL *LookupSymbol(void)
         {
             Error("Identifier not declared..", CurrentToken.pos);
             KillCodeGeneration();
+            compileError = 1;
         }
      }
      else sptr = NULL;
     return sptr;
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  OpenFiles:  Reads strings from the command-line and opens the           */
+/*              associated input and listing files.                         */
+/*                                                                          */
+/*    Note that this routine mmodifies the globals "InputFile" and          */
+/*    "ListingFile".  It returns 1 ("true" in C-speak) if the input and     */
+/*    listing files are successfully opened, 0 if not, allowing the caller  */
+/*    to make a graceful exit if the opening process failed.                */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       1) Integer argument count (standard C "argc").          */
+/*                  2) Array of pointers to C-strings containing arguments  */
+/*                  (standard C "argv").                                    */
+/*                                                                          */
+/*    Outputs:      No direct outputs, but note side effects.               */
+/*                                                                          */
+/*    Returns:      Boolean success flag (i.e., an "int":  1 or 0)          */
+/*                                                                          */
+/*    Side Effects: If successful, modifies globals "InputFile" and         */
+/*                  "ListingFile".                                          */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE int  OpenFiles( int argc, char *argv[] )
+{
+
+
+    if ( argc != 4 )  {
+        fprintf( stderr, "%s <inputfile> <listfile>\n", argv[0] );
+        return 0;
+    }
+
+    if ( NULL == ( InputFile = fopen( argv[1], "r" ) ) )  {
+        fprintf( stderr, "cannot open \"%s\" for input\n", argv[1] );
+        return 0;
+    }
+
+    if ( NULL == ( ListFile = fopen( argv[2], "w" ) ) )  {
+        fprintf( stderr, "cannot open \"%s\" for output\n", argv[2] );
+        fclose( InputFile );
+        return 0;
+    }
+
+    if ( NULL == ( CodeFile = fopen( argv[3], "w" ) ) )  {
+        fprintf( stderr, "cannot open \"%s\" for output\n", argv[3] );
+        fclose( InputFile );
+        fclose( ListFile );
+        return 0;
+    }
+
+    return 1;
 }
